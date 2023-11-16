@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Chat UI</title>
+  <!-- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-200 flex items-center justify-center h-screen p-5">
+  <div class="bg-white flex flex-col rounded-lg shadow-lg p-5" style="width: 100%; height: 100%">
+    <div id="chat"
+      class="h-full border-b-2 border-gray-200 h-64 overflow-auto mb-4 p-4 bg-gray-50 rounded-lg"></div>
+    <div class="flex flex-col">
+      <div class="flex">
+        <input id="userInput" type="text" placeholder="Type your message here..."
+          class="flex-grow mr-4 rounded-lg border-2 p-2 h-10">
+        <button id="sendButton" class="bg-blue-500 text-white rounded-lg px-4 py-2">Send</button>
+      </div>
+      <div class="flex flex-row gap-10 mt-4">
+        <div class="flex flex-col w-full">
+          <p class="text-blue-500">System Prompt</p>
+          <input id="systemPrompt" type="text" value="You are an assistant."
+            placeholder="Enter your system prompt here..." class="w-full rounded-lg border-2 p-2">
+        </div>
+        <div class="flex flex-col w-full">
+          <p class="text-blue-500">Max Tokens</p>
+          <input id="maxTokens" type="number" value="256" placeholder="Enter your max tokens here..."
+            class="w-full rounded-lg border-2 p-2">
+        </div>
+        <div class="flex flex-col w-full">
+          <p class="text-blue-500">Auth Token</p>
+          <input id="authToken" type="password" value=""
+            placeholder="Enter your Authorization token here..." class="w-full rounded-lg border-2 p-2">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatDiv = document.getElementById('chat');
+    const userInput = document.getElementById('userInput');
+    const authToken = document.getElementById('authToken');
+    const sendButton = document.getElementById('sendButton');
+    const systemPrompt = document.getElementById('systemPrompt');
+    const maxTokens = document.getElementById('maxTokens');
+
+    authToken.focus();
+    userInput.disabled = true;
+    authToken.addEventListener('keyup', (event) => {
+        userInput.disabled = false;
+    });
+
+    userInput.addEventListener('keyup', (event) => {
+      if (event.key === 'Enter') {
+        sendButton.click();
+      }
+    });
+
+    let history = [
+      {
+        "role": "system",
+        "content": "You are an assistant. You will respond in Markdown if needed. Mark your response with `markdown` in the first line.",
+      }
+    ];
+
+    systemPrompt.addEventListener('keyup', (event) => {
+      history[0] = {
+        "role": "system",
+        "content": systemPrompt.value,
+      };
+    });
+
+    sendButton.addEventListener('click', async () => {
+      const userMessage = userInput.value;
+      userInput.value = '';
+      chatDiv.innerHTML += `<p class="text-blue-500">You: ${userMessage}</p>`;
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+      history.push({
+        "role": "user",
+        "content": userMessage,
+      });
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken.value
+        },
+        body: JSON.stringify({
+          messages: history,
+          stream: true,
+          max_tokens: maxTokens.value || 256,
+        })
+      });
+
+      
+      const lastChatBubbleId = document.createElement('div');
+      lastChatBubbleId.id = 'currentResponse';
+      chatDiv.appendChild(lastChatBubbleId);
+
+      if (response.status !== 200) {
+        const currentResponse = document.getElementById('currentResponse');
+        const responseData = await response.json();
+        currentResponse.innerHTML = `<p class="text-red-500">Error: ${responseData.message}</p>`;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+        return;
+      }
+
+      if (!response.body) return;
+      const reader = response.body
+        .pipeThrough(new TextDecoderStream())
+        .getReader();
+
+      let result = '';
+      while (true) {
+        var { value, done } = await reader.read();
+        if (done) break;
+        console.log(value.trim());
+
+        const data = value.slice(value.indexOf(':') + 2).trim();
+        if ("[DONE]" === data) break;
+
+        try {
+          const parsedData = JSON.parse(data);
+          result += parsedData.response;
+          const currentResponse = document.getElementById('currentResponse');
+
+          currentResponse.innerHTML = `<p class="text-green-500">Bot: ${result}</p>`;
+          chatDiv.scrollTop = chatDiv.scrollHeight;
+        } catch (e) {
+        }
+      }
+      history.push({
+        "role": "assistant",
+        "content": result,
+      });
+      lastChatBubbleId.id = '';
+
+    });
+  </script>
+</body>
+
+</html>
