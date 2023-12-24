@@ -1,4 +1,4 @@
-name = "cf-llama"
+name = "workers-ai-showcase"
 main = "src/index.ts"
 compatibility_date = "2023-10-30"
 

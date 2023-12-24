@@ -45,6 +45,14 @@
     const systemPrompt = document.getElementById('systemPrompt');
     const maxTokens = document.getElementById('maxTokens');
 
+    if (localStorage.getItem('authToken')) {
+      authToken.value = localStorage.getItem('authToken');
+    }
+
+    authToken.addEventListener('keyup', (event) => {
+      localStorage.setItem('authToken', authToken.value);
+    });
+
     authToken.focus();
     userInput.disabled = true;
     authToken.addEventListener('keyup', (event) => {
@@ -60,7 +68,7 @@
     let history = [
       {
         "role": "system",
-        "content": "You are an assistant. You will respond in Markdown if needed. Mark your response with `markdown` in the first line.",
+        "content": "You are an assistant.",
       }
     ];
 
@@ -80,7 +88,7 @@
         "role": "user",
         "content": userMessage,
       });
-      const response = await fetch('/api/ai', {
+      const response = await fetch('/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
