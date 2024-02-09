@@ -8,12 +8,14 @@
     "start": "wrangler dev"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230419.0",
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "@types/node": "^20.10.5",
     "typescript": "^5.0.4",
-    "wrangler": "^3.22.1"
+    "wrangler": "^3.28.1"
   },
   "dependencies": {
-    "@cloudflare/ai": "^1.0.33",
-    "@types/node": "^20.10.5"
+    "@cloudflare/ai": "^1.0.50",
+    "@pinecone-database/pinecone": "^1.1.2",
+    "hono": "^3.11.10"
   }
 }
