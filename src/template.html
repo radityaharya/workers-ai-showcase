@@ -100,7 +100,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authToken.value
+          'Authorization': "Bearer " + authToken.value,
         },
         body: JSON.stringify({
           messages: history,
